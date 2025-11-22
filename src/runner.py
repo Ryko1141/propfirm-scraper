@@ -30,36 +30,8 @@ class RiskMonitor:
     
     def _create_snapshot(self) -> AccountSnapshot:
         """Create an account snapshot from current API data"""
-        account_info = self.client.get_account_info()
-        positions_data = self.client.get_positions()
-        
-        positions = []
-        total_pl = 0
-        
-        for pos_data in positions_data:
-            position = Position(
-                position_id=str(pos_data.get("id")),
-                symbol=pos_data.get("symbol"),
-                volume=float(pos_data.get("volume", 0)),
-                entry_price=float(pos_data.get("entryPrice", 0)),
-                current_price=float(pos_data.get("currentPrice", 0)),
-                profit_loss=float(pos_data.get("profitLoss", 0)),
-                side=pos_data.get("side", "buy")
-            )
-            positions.append(position)
-            total_pl += position.profit_loss
-        
-        snapshot = AccountSnapshot(
-            timestamp=datetime.now(),
-            balance=float(account_info.get("balance", 0)),
-            equity=float(account_info.get("equity", 0)),
-            margin_used=float(account_info.get("marginUsed", 0)),
-            margin_available=float(account_info.get("marginAvailable", 0)),
-            positions=positions,
-            total_profit_loss=total_pl
-        )
-        
-        return snapshot
+        # Use the enhanced get_account_snapshot method
+        return self.client.get_account_snapshot()
     
     def check_once(self):
         """Perform a single monitoring check"""
