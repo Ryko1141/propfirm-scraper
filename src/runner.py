@@ -4,7 +4,6 @@ Main runner for the prop risk monitor
 import time
 from datetime import datetime
 from src.config import Config
-from src.ctrader_client import CTraderClient
 from src.models import AccountSnapshot, Position
 from src.rules import RiskRuleEngine
 from src.notifier import Notifier
@@ -22,7 +21,21 @@ class RiskMonitor:
         """
         Config.validate()
         
-        self.client = CTraderClient()
+        # Initialize the appropriate client based on platform
+        if Config.PLATFORM == "ctrader":
+            from src.ctrader_client import CTraderClient
+            self.client = CTraderClient()
+            print("Using cTrader platform")
+        elif Config.PLATFORM == "mt5":
+            from src.mt5_client import MT5Client
+            self.client = MT5Client()
+            # Connect to MT5 terminal
+            if not self.client.connect():
+                raise ConnectionError("Failed to connect to MT5")
+            print("Using MetaTrader 5 platform")
+        else:
+            raise ValueError(f"Unsupported platform: {Config.PLATFORM}")
+        
         self.rule_engine = RiskRuleEngine()
         self.notifier = Notifier()
         self.check_interval = check_interval

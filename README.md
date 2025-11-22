@@ -1,11 +1,13 @@
 # Prop Risk Monitor
 
-A Python-based trading account monitoring system that tracks risk metrics and sends alerts when predefined rules are violated. Supports both REST API polling and WebSocket streaming for real-time updates.
+A Python-based trading account monitoring system that tracks risk metrics and sends alerts when predefined rules are violated. **Supports both cTrader and MetaTrader 5 platforms** with REST API polling and WebSocket streaming (cTrader only).
 
 ## Features
 
-- **Real-time monitoring** of cTrader trading accounts via Open API
-- **Dual modes**: REST polling (simple) or WebSocket streaming (advanced)
+- **Multi-platform support**: Works with both **cTrader** and **MetaTrader 5**
+- **Real-time monitoring** of trading accounts
+- **Dual modes** (cTrader): REST polling (simple) or WebSocket streaming (advanced)
+- **MT5 native integration**: Direct connection to MetaTrader 5 terminal
 - **Comprehensive risk rules**:
   - Daily loss limits (realised + unrealised P&L)
   - Position size limits per trade
@@ -23,16 +25,18 @@ prop-risk-monitor/
     __init__.py          # Package initialization
     config.py            # Configuration management
     ctrader_client.py    # cTrader Open API client (REST + WebSocket)
+    mt5_client.py        # MetaTrader 5 API client
     models.py            # Data models
     rules.py             # Risk rule engine
     notifier.py          # Notification system
-    runner.py            # Main application runner (REST polling)
-    async_runner.py      # Async runner (WebSocket streaming)
+    runner.py            # Main application runner (supports both platforms)
+    async_runner.py      # Async runner (WebSocket streaming - cTrader only)
   examples/
-    test_api.py          # API testing and examples
+    test_api.py          # cTrader API testing
+    test_mt5.py          # MT5 API testing
   .env                   # Environment variables (not committed)
   requirements.txt       # Python dependencies
-  README.md             # This file
+  README.md              # This file
 ```
 
 ## Installation
@@ -49,36 +53,54 @@ pip install -r requirements.txt
 ```
 
 3. Configure environment variables:
-   - Copy `.env` and fill in your credentials
-   - Update cTrader API credentials
+   - Copy `.env.example` to `.env`
+   - Set your `PLATFORM` ("ctrader" or "mt5")
+   - Fill in platform-specific credentials
    - (Optional) Add Telegram bot token for notifications
 
 ## Configuration
 
 Edit the `.env` file with your settings:
 
-- `CTRADER_CLIENT_ID`: Your cTrader API client ID
-- `CTRADER_CLIENT_SECRET`: Your cTrader API client secret
-- `CTRADER_ACCESS_TOKEN`: Your cTrader access token
-- `ACCOUNT_ID`: Your trading account ID
+### Common Settings (Both Platforms)
+- `PLATFORM`: Choose "ctrader" or "mt5"
+- `ACCOUNT_ID`: Your trading account ID/number
 - `TELEGRAM_BOT_TOKEN`: (Optional) Telegram bot token for notifications
 - `TELEGRAM_CHAT_ID`: (Optional) Telegram chat ID for notifications
 - `MAX_DAILY_LOSS_PERCENT`: Maximum allowed daily loss percentage (default: 5.0)
 - `MAX_POSITION_SIZE_PERCENT`: Maximum position size as percentage of equity (default: 10.0)
 
+### cTrader Specific Settings
+- `CTRADER_CLIENT_ID`: Your cTrader API client ID
+- `CTRADER_CLIENT_SECRET`: Your cTrader API client secret
+- `CTRADER_ACCESS_TOKEN`: Your cTrader access token
+
+### MetaTrader 5 Specific Settings
+- `MT5_PASSWORD`: Your MT5 account password
+- `MT5_SERVER`: Your broker's MT5 server name
+- `MT5_PATH`: (Optional) Custom path to MT5 terminal executable
+
 ## Usage
 
 ### Quick Start - Test Your Connection
 
-First, test your API connection:
+First, test your API connection based on your platform:
 
+**For cTrader:**
 ```bash
 python examples/test_api.py
 ```
 
+**For MetaTrader 5:**
+```bash
+python examples/test_mt5.py
+```
+
 This will verify your credentials and show live account data.
 
-### Option 1: REST Polling (Recommended for Beginners)
+### Running the Monitor
+
+#### Option 1: REST Polling (Recommended - Works for Both Platforms)
 
 Run the monitor with REST API polling (checks every 60 seconds):
 
@@ -87,12 +109,14 @@ python -m src.runner
 ```
 
 The monitor will:
-1. Connect to your cTrader account via REST API
+1. Connect to your trading account (cTrader via REST API or MT5 via terminal)
 2. Check account status every 60 seconds
 3. Evaluate risk rules
 4. Send notifications when violations occur
 
-### Option 2: WebSocket Streaming (Advanced)
+**Note**: The runner automatically detects your platform from the `.env` file.
+
+#### Option 2: WebSocket Streaming (cTrader Only - Advanced)
 
 For real-time updates using WebSocket:
 
@@ -110,9 +134,11 @@ Press `Ctrl+C` to stop either monitor.
 
 ## API Client Features
 
+### cTrader Client
+
 The `CTraderClient` supports both sync and async operations:
 
-### Synchronous REST API
+#### Synchronous REST API
 ```python
 from src.ctrader_client import CTraderClient
 
@@ -134,7 +160,7 @@ today_pl = client.get_today_pl()
 snapshot = client.get_account_snapshot()
 ```
 
-### Asynchronous WebSocket API
+#### Asynchronous WebSocket API
 ```python
 import asyncio
 from src.ctrader_client import CTraderClient
@@ -155,6 +181,36 @@ async def main():
 asyncio.run(main())
 ```
 
+### MetaTrader 5 Client
+
+The `MT5Client` provides synchronous access to MT5 terminal:
+
+```python
+from src.mt5_client import MT5Client
+
+client = MT5Client()
+
+# Connect to MT5 terminal
+if client.connect():
+    # Get account data
+    balance = client.get_balance()
+    equity = client.get_equity()
+    margin_free = client.get_margin_free()
+    unrealised_pnl = client.get_unrealised_pnl()
+    
+    # Get positions
+    positions = client.get_open_positions()
+    
+    # Get today's realised P&L
+    today_pl = client.get_today_pl()
+    
+    # Get complete snapshot
+    snapshot = client.get_account_snapshot()
+    
+    # Disconnect when done
+    client.disconnect()
+```
+
 ## Risk Rules
 
 ### Daily Loss Limit
@@ -172,7 +228,9 @@ Monitors margin usage:
 - **Warning**: Margin level below 100% (using more margin than available)
 - **Critical**: Margin level below 50% (high risk of margin call)
 
-## cTrader Open API Details
+## Platform-Specific Details
+
+### cTrader Open API
 
 This monitor uses the cTrader Open API which provides:
 
@@ -180,31 +238,45 @@ This monitor uses the cTrader Open API which provides:
 - **WebSocket API**: For real-time streaming of price updates and execution events
 - **Authentication**: OAuth 2.0 with client credentials
 
-### Data Format Notes
+**Data Format Notes**: cTrader API returns values in cents. The client automatically converts to dollars.
 
-cTrader API returns values in cents (multiply by 100). The client automatically converts:
-- Balance, equity, margin → dollars
-- Position volumes → lots
-- Profit/loss values → dollars
-
-### Getting API Credentials
-
+**Getting API Credentials**:
 1. Create a cTrader Open API application at [https://openapi.ctrader.com](https://openapi.ctrader.com)
 2. Get your Client ID and Client Secret
 3. Generate an access token with account read permissions
 4. Get your trading account ID from cTrader
 
+### MetaTrader 5 Integration
+
+This monitor connects directly to the MT5 terminal using the official MetaTrader5 Python package:
+
+- **Direct terminal connection**: Communicates with local MT5 installation
+- **Real-time data**: Access to account, positions, orders, and history
+- **No external API**: Works offline with just terminal connection
+- **Automatic reconnection**: Handles connection drops gracefully
+
+**Requirements**:
+1. MetaTrader 5 terminal installed on your computer
+2. Active trading account with your broker
+3. "AutoTrading" enabled in MT5 (Tools → Options → Expert Advisors)
+4. Account number, password, and server name
+
+**Note**: MT5 terminal should not be running when the monitor starts, or allow DLL imports in the terminal settings.
+
 ## Architecture
 
-### REST Polling Mode (Simple)
+### REST Polling Mode (Both Platforms)
 ```
-Runner → CTraderClient.get_account_snapshot() → REST API
+Runner → Client.get_account_snapshot() → API/Terminal
        → RiskRuleEngine.evaluate()
        → Notifier.send_violations()
        → Sleep 60s → Repeat
 ```
 
-### WebSocket Streaming Mode (Advanced)
+**cTrader**: Polls REST API endpoints  
+**MT5**: Queries local terminal via Python API
+
+### WebSocket Streaming Mode (cTrader Only)
 ```
 AsyncRunner → CTraderClient.connect() → WebSocket
             → Subscribe to account events
