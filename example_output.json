@@ -1,0 +1,97 @@
+{
+  "firm_name": "FundedNext",
+  "website": "https://help.fundednext.com",
+  "scraped_date": "2025-01-15",
+  "general_rules": {
+    "prohibited_strategies": [
+      "arbitrage",
+      "copy trading",
+      "gambling",
+      "grid trading",
+      "hedging",
+      "HFT",
+      "high frequency trading",
+      "martingale",
+      "news trading",
+      "tick scalping"
+    ],
+    "payout_rules": {
+      "profit_split": "up to 90%",
+      "payout_frequency": "bi-weekly or on-demand"
+    },
+    "trading_restrictions": {
+      "ea_allowed": true,
+      "weekend_holding": true
+    }
+  },
+  "challenge_types": {
+    "stellar_1_step": {
+      "name": "Stellar 1-Step",
+      "account_sizes": [
+        "6000",
+        "15000",
+        "25000",
+        "50000",
+        "100000",
+        "200000"
+      ],
+      "profit_targets": [
+        "10"
+      ],
+      "daily_loss_limit": "3",
+      "max_drawdown": "6",
+      "min_trading_days": 5,
+      "leverage": "1:100",
+      "sources": [
+        "https://help.fundednext.com/en/articles/9428394-stellar-1-step-challenge-rules"
+      ]
+    },
+    "stellar_2_step": {
+      "name": "Stellar 2-Step",
+      "account_sizes": [
+        "6000",
+        "15000",
+        "25000",
+        "50000",
+        "100000",
+        "200000"
+      ],
+      "phases": {
+        "phase_1": {
+          "profit_target": "8",
+          "daily_loss_limit": "5",
+          "max_drawdown": "10",
+          "min_trading_days": 3
+        },
+        "phase_2": {
+          "profit_target": "5",
+          "daily_loss_limit": "5",
+          "max_drawdown": "10",
+          "min_trading_days": 3
+        }
+      },
+      "leverage": "1:100",
+      "sources": [
+        "https://help.fundednext.com/en/articles/8755881-stellar-2-step-challenge-rules"
+      ]
+    },
+    "stellar_lite": {
+      "name": "Stellar Lite",
+      "account_sizes": [
+        "6000",
+        "15000",
+        "25000"
+      ],
+      "profit_targets": [
+        "5"
+      ],
+      "daily_loss_limit": "4",
+      "max_drawdown": "8",
+      "min_trading_days": 0,
+      "leverage": "1:30",
+      "sources": [
+        "https://help.fundednext.com/en/articles/9516308-stellar-lite-challenge-rules"
+      ]
+    }
+  }
+}
