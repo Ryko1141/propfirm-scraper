@@ -12,8 +12,8 @@ ENV/
 acg_profile/
 
 # Output files
-output/*.json
-*.json
+output/
+data/
 
 # IDE
 .vscode/
@@ -28,5 +28,5 @@ Thumbs.db
 # Logs
 *.log
 
-# Don't ignore example output
-!output/example_output.json
+# Allow checked-in examples
+!examples/example_output.json

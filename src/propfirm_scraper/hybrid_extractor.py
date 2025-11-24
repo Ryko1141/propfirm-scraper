@@ -3,8 +3,10 @@ Hybrid extraction: Fast pattern matching + LLM for missing values.
 """
 
 import json
-from fast_extractor import extract_rules_from_page, group_by_challenge_type
-from llm_extractor import query_llm
+from pathlib import Path
+
+from .fast_extractor import extract_rules_from_page, group_by_challenge_type
+from .llm_extractor import query_llm
 
 
 def needs_llm_help(rules, page_title=""):
@@ -162,7 +164,10 @@ def hybrid_extract(input_file, output_file='output/rules_hybrid.json', model='qw
     
     # Save results
     print(f"💾 Saving results to {output_file}...")
-    with open(output_file, 'w', encoding='utf-8') as f:
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with output_path.open('w', encoding='utf-8') as f:
         json.dump(grouped_rules, f, indent=2, ensure_ascii=False)
     
     print("\n" + "=" * 60)

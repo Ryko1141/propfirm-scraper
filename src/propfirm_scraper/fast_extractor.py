@@ -3,7 +3,9 @@ Fast pattern-based rule extraction from scraped HTML.
 """
 
 import json
-from extractors import (
+from pathlib import Path
+
+from .extractors import (
     extract_account_sizes,
     extract_profit_targets,
     extract_drawdown_limits,
@@ -106,7 +108,10 @@ def extract_all_rules(input_file, output_file='output/rules_fast.json'):
     
     # Save output
     print(f"Saving results to {output_file}...")
-    with open(output_file, 'w', encoding='utf-8') as f:
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with output_path.open('w', encoding='utf-8') as f:
         json.dump(grouped_rules, f, indent=2, ensure_ascii=False)
     
     print(f"\n✓ Extracted {len(all_rules)} rule sets")

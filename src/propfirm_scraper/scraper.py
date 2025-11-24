@@ -5,8 +5,10 @@ Uses Playwright with stealth mode to scrape prop firm help centers.
 
 import json
 import time
-from urllib.parse import urljoin, urlparse
 from collections import deque
+from pathlib import Path
+from urllib.parse import urljoin, urlparse
+
 from playwright.sync_api import sync_playwright
 from playwright_stealth import Stealth
 
@@ -46,6 +48,9 @@ def crawl_site(start_url, max_pages=200, output_file="output/scraped_pages.json"
     queue = deque([start_url])
     results = []
     
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
     with sync_playwright() as pw:
         # Launch persistent browser with stealth
         browser = pw.chromium.launch_persistent_context(
@@ -117,51 +122,19 @@ def crawl_site(start_url, max_pages=200, output_file="output/scraped_pages.json"
             time.sleep(1)
         
         browser.close()
-    
-    # Save results
-    print(f"\n💾 Saving {len(results)} pages to {output_file}...")
-    import os
-    os.makedirs(os.path.dirname(output_file) if os.path.dirname(output_file) else ".", exist_ok=True)
-    
-    with open(output_file, "w", encoding="utf-8") as f:
+
+    with output_path.open('w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    
-    print(f"✅ Scraping complete! Saved to {output_file}")
-    return results
-
-
-def main():
-    """Main entry point for scraper."""
-    import sys
-    
-    print("=== PropFirm Scraper (Cloudflare-Proof) ===\n")
-    
-    # Check for command line arguments
-    if len(sys.argv) > 1:
-        start_url = sys.argv[1]
-        max_pages = int(sys.argv[2]) if len(sys.argv) > 2 else 200
-        output_file = sys.argv[3] if len(sys.argv) > 3 else "output/scraped_pages.json"
-    else:
-        start_url = input("Enter prop firm help center URL: ").strip()
-        
-        if not start_url.startswith("http"):
-            print("❌ Invalid URL. Must start with http:// or https://")
-            return
-        
-        max_pages = input("Max pages to scrape (default 200): ").strip()
-        max_pages = int(max_pages) if max_pages.isdigit() else 200
-        output_file = "output/scraped_pages.json"
-    
-    print(f"\n🚀 Starting scrape of {start_url}")
-    print(f"📄 Will scrape up to {max_pages} pages\n")
-    
-    data = crawl_site(start_url, max_pages=max_pages, output_file=output_file)
-    
-    print(f"\n📋 Preview of first 3 pages:")
-    for page in data[:3]:
-        print(f"  • {page['title']}")
-        print(f"    {page['url']}")
+        print(f"Saved {len(results)} pages to {output_path}")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Crawl a prop firm help center and save page content.")
+    parser.add_argument("start_url", help="Starting URL (e.g., help center homepage)")
+    parser.add_argument("--max-pages", type=int, default=200, dest="max_pages", help="Maximum number of pages to scrape")
+    parser.add_argument("--output", default="output/scraped_pages.json", help="Path to save scraped data")
+
+    args = parser.parse_args()
+    crawl_site(args.start_url, max_pages=args.max_pages, output_file=args.output)

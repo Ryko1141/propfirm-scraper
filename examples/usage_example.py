@@ -5,14 +5,16 @@ Example usage of the propfirm scraper with all three extraction methods.
 import sys
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_PATH = PROJECT_ROOT / "src"
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(0, str(SRC_PATH))
 
-from scraper import crawl_site
-from fast_extractor import extract_all_rules as fast_extract
-from llm_extractor import extract_with_llm
-from hybrid_extractor import hybrid_extract
-from utils import format_rule_summary, load_json
+from propfirm_scraper.scraper import crawl_site
+from propfirm_scraper.fast_extractor import extract_all_rules as fast_extract
+from propfirm_scraper.llm_extractor import extract_with_llm
+from propfirm_scraper.hybrid_extractor import hybrid_extract
+from propfirm_scraper.utils import format_rule_summary, load_json
 
 
 def example_scrape_and_extract(url, firm_name="PropFirm", max_pages=50):

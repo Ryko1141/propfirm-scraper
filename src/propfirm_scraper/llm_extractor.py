@@ -3,6 +3,8 @@ LLM-powered rule extraction using local Ollama models.
 """
 
 import json
+from pathlib import Path
+
 import ollama
 
 
@@ -101,7 +103,10 @@ def extract_with_llm(input_file, output_file='output/rules_llm.json', model='qwe
             print(f"    💾 Progress saved ({idx}/{len(pages)} pages)")
     
     # Final save
-    with open(output_file, 'w', encoding='utf-8') as f:
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with output_path.open('w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
     
     print(f"\n✓ Completed extraction for {len(results)} pages")
