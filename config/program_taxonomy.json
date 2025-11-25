@@ -1,0 +1,23 @@
+{
+  "FundedNext": {
+    "official_programs": {
+      "evaluation_2step": "Evaluation Challenge",
+      "stellar_1step": "Stellar 1-Step Challenge",
+      "stellar_2step": "Stellar 2-Step Challenge",
+      "stellar_lite": "Stellar Lite Challenge",
+      "stellar_instant": "Stellar Instant Account"
+    },
+    "aliases": {
+      "evaluation": "evaluation_2step",
+      "evaluation_challenge": "evaluation_2step",
+      "stellar": "stellar_1step",
+      "stellar 1-step": "stellar_1step",
+      "stellar 2-step": "stellar_2step",
+      "stellar lite": "stellar_lite",
+      "lite": "stellar_lite",
+      "stellar instant": "stellar_instant",
+      "funded": "stellar_instant",
+      "instant": "stellar_instant"
+    }
+  }
+}
