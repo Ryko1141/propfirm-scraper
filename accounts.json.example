@@ -1,0 +1,67 @@
+{
+  "accounts": [
+    {
+      "label": "FTMO Challenge - $100k",
+      "firm": "FTMO",
+      "platform": "mt5",
+      "account_id": "12345678",
+      "starting_balance": 100000.0,
+      "rules": "ftmo",
+      "check_interval": 60,
+      "enabled": true
+    },
+    {
+      "label": "FundedNext - Stellar 1-Step",
+      "firm": "FundedNext",
+      "program_id": "stellar_1step",
+      "platform": "mt5",
+      "account_id": "23456789",
+      "starting_balance": 100000.0,
+      "check_interval": 60,
+      "enabled": true,
+      "comment": "Uses database rules for stellar_1step program"
+    },
+    {
+      "label": "Alpha Capital - $50k",
+      "firm": "Alpha Capital Group",
+      "platform": "ctrader",
+      "account_id": "987654321",
+      "starting_balance": 50000.0,
+      "rules": "alpha",
+      "check_interval": 60,
+      "enabled": true
+    },
+    {
+      "label": "Funded Trader - Live",
+      "firm": "The Funded Trader",
+      "platform": "mt5",
+      "account_id": "11223344",
+      "starting_balance": 25000.0,
+      "rules": "funded_trader",
+      "telegram_chat_id": "-1001234567890",
+      "check_interval": 30,
+      "enabled": true
+    },
+    {
+      "label": "Custom Rules Account",
+      "firm": "Custom Firm",
+      "platform": "mt5",
+      "account_id": "55667788",
+      "starting_balance": 10000.0,
+      "rules": {
+        "name": "Custom Firm Rules",
+        "max_daily_drawdown_pct": 4.0,
+        "max_total_drawdown_pct": 8.0,
+        "max_risk_per_trade_pct": 1.5,
+        "max_open_lots": 8.0,
+        "max_positions": 6,
+        "warn_buffer_pct": 0.75,
+        "trading_days_only": true,
+        "require_stop_loss": true,
+        "max_leverage": 100.0
+      },
+      "check_interval": 60,
+      "enabled": false
+    }
+  ]
+}
