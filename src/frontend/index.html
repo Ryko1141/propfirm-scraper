@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guardian Compliance Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0d1117;
+        --panel: rgba(255, 255, 255, 0.04);
+        --border: rgba(255, 255, 255, 0.08);
+        --muted: #9aa5b1;
+        --primary: #8a5cf6;
+        --primary-strong: #6b33f2;
+        --accent: #64d9ff;
+        --success: #3bd671;
+        --warning: #f6c445;
+        --danger: #ff6b6b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 20% 20%, rgba(138, 92, 246, 0.12), transparent 25%),
+          radial-gradient(circle at 80% 0%, rgba(100, 217, 255, 0.15), transparent 30%),
+          #0b0f16;
+        color: #e5e7eb;
+        min-height: 100vh;
+      }
+
+      .shell {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 20px 80px;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+
+      .brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .brand-logo {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        box-shadow: 0 10px 40px rgba(138, 92, 246, 0.35);
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        color: #0b0f16;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 1.6rem;
+        letter-spacing: -0.02em;
+      }
+
+      .subhead {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.97rem;
+      }
+
+      .pill {
+        border: 1px solid var(--border);
+        background: var(--panel);
+        padding: 10px 14px;
+        border-radius: 14px;
+        color: var(--muted);
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 0.92rem;
+      }
+
+      .grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .grid.columns-2 {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      }
+
+      .panel {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(4px);
+      }
+
+      h2 {
+        margin: 0 0 6px;
+        font-size: 1.2rem;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      form {
+        display: grid;
+        gap: 14px;
+      }
+
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+
+      input,
+      select,
+      textarea {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        color: #fff;
+        font-size: 1rem;
+        outline: none;
+        transition: border 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: rgba(138, 92, 246, 0.9);
+        box-shadow: 0 0 0 3px rgba(138, 92, 246, 0.25);
+      }
+
+      textarea {
+        min-height: 100px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: none;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.1s ease, box-shadow 0.2s ease;
+      }
+
+      button.primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+        color: #0b0f16;
+        box-shadow: 0 10px 30px rgba(138, 92, 246, 0.45);
+      }
+
+      button.secondary {
+        background: rgba(255, 255, 255, 0.06);
+        color: #fff;
+        border: 1px solid var(--border);
+      }
+
+      button:active {
+        transform: translateY(1px);
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 14px;
+        font-weight: 700;
+        text-transform: capitalize;
+      }
+
+      .status-compliant {
+        background: rgba(59, 214, 113, 0.12);
+        color: #b4f4c8;
+        border: 1px solid rgba(59, 214, 113, 0.4);
+      }
+
+      .status-needs_attention {
+        background: rgba(246, 196, 69, 0.12);
+        color: #ffe9a6;
+        border: 1px solid rgba(246, 196, 69, 0.4);
+      }
+
+      .status-non_compliant {
+        background: rgba(255, 107, 107, 0.12);
+        color: #ffc6c6;
+        border: 1px solid rgba(255, 107, 107, 0.4);
+      }
+
+      .breach-chip {
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .breach-chip strong {
+        color: #fff;
+      }
+
+      .breach-chip small {
+        color: var(--muted);
+      }
+
+      .insight-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+      }
+
+      .insight {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .pill-accent {
+        background: rgba(100, 217, 255, 0.14);
+        border: 1px solid rgba(100, 217, 255, 0.35);
+        color: #d8f6ff;
+        border-radius: 10px;
+        padding: 6px 10px;
+        font-weight: 600;
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .muted-inline {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 9px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        color: #0b0f16;
+        font-weight: 700;
+      }
+
+      .tag.warn {
+        background: #f6c445;
+      }
+
+      .tag.danger {
+        background: #ff6b6b;
+      }
+
+      .tag.success {
+        background: #3bd671;
+      }
+
+      .positions-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      .positions-table th,
+      .positions-table td {
+        padding: 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        font-size: 0.95rem;
+      }
+
+      .empty-state {
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        text-align: center;
+        color: var(--muted);
+      }
+
+      .loading-bar {
+        height: 4px;
+        width: 120px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(138, 92, 246, 0.2), rgba(100, 217, 255, 0.2));
+        position: relative;
+        overflow: hidden;
+      }
+
+      .loading-bar::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(138, 92, 246, 0.4), rgba(100, 217, 255, 0.6), rgba(138, 92, 246, 0.4));
+        width: 40%;
+        animation: shimmer 1.4s infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-40%);
+        }
+        100% {
+          transform: translateX(260%);
+        }
+      }
+
+      @media (max-width: 640px) {
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .brand h1 {
+          font-size: 1.4rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <div class="brand">
+          <div class="brand-logo">G</div>
+          <div>
+            <h1>Guardian Compliance Studio</h1>
+            <p class="subhead">Submit account data, run instant prop checks, and study soft-rule signals.</p>
+          </div>
+        </div>
+        <div class="pill">
+          <span>Live rules engine</span>
+          <span>Soft guidance surfaced</span>
+        </div>
+      </header>
+
+      <div class="grid columns-2">
+        <section class="panel">
+          <h2>1) Describe your account</h2>
+          <p class="muted">Paste your latest metrics so we can simulate a live compliance run.</p>
+          <form id="review-form">
+            <div class="row">
+              <label>
+                Firm
+                <input id="firm" name="firm" placeholder="e.g. FundedNext" required />
+              </label>
+              <label>
+                Program ID
+                <input id="program_id" name="program_id" placeholder="e.g. stellar_1step (optional)" />
+              </label>
+              <label>
+                Account ID
+                <input id="account_id" name="account_id" placeholder="demo-001 (optional)" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                Balance
+                <input id="balance" name="balance" type="number" step="0.01" required />
+              </label>
+              <label>
+                Equity
+                <input id="equity" name="equity" type="number" step="0.01" required />
+              </label>
+              <label>
+                Starting Balance
+                <input id="starting_balance" name="starting_balance" type="number" step="0.01" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                Day Start Balance
+                <input id="day_start_balance" name="day_start_balance" type="number" step="0.01" />
+              </label>
+              <label>
+                Day Start Equity
+                <input id="day_start_equity" name="day_start_equity" type="number" step="0.01" />
+              </label>
+              <label>
+                Margin Used
+                <input id="margin_used" name="margin_used" type="number" step="0.01" value="0" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                Margin Available
+                <input id="margin_available" name="margin_available" type="number" step="0.01" value="0" />
+              </label>
+              <label>
+                Daily P/L
+                <input id="total_profit_loss" name="total_profit_loss" type="number" step="0.01" value="0" />
+              </label>
+              <label>
+                Include soft rules
+                <select id="include_soft_rules" name="include_soft_rules">
+                  <option value="true">Yes, surface insights</option>
+                  <option value="false">No, just hard checks</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="panel" style="padding: 14px; background: rgba(255, 255, 255, 0.02);">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <div>
+                  <h3 style="margin: 0;">Open positions</h3>
+                  <p class="muted" style="margin: 2px 0 0;">Optional — add trades to validate per-position limits.</p>
+                </div>
+                <button type="button" class="secondary" id="add-position">+ Add position</button>
+              </div>
+              <div id="positions-empty" class="empty-state">No open positions added.</div>
+              <table class="positions-table" id="positions-table" style="display: none;">
+                <thead>
+                  <tr class="muted">
+                    <th>Symbol</th>
+                    <th>Side</th>
+                    <th>Lots</th>
+                    <th>Entry</th>
+                    <th>Current</th>
+                    <th>P/L</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="positions-body"></tbody>
+              </table>
+              <div id="position-form" class="row" style="margin-top: 10px; display: none;">
+                <label>
+                  Symbol
+                  <input id="pos-symbol" placeholder="XAUUSD" />
+                </label>
+                <label>
+                  Side
+                  <select id="pos-side">
+                    <option value="buy">Buy</option>
+                    <option value="sell">Sell</option>
+                  </select>
+                </label>
+                <label>
+                  Lots
+                  <input id="pos-volume" type="number" step="0.01" value="1" />
+                </label>
+                <label>
+                  Entry Price
+                  <input id="pos-entry" type="number" step="0.0001" value="0" />
+                </label>
+                <label>
+                  Current Price
+                  <input id="pos-current" type="number" step="0.0001" value="0" />
+                </label>
+                <label>
+                  Unrealized P/L
+                  <input id="pos-pl" type="number" step="0.01" value="0" />
+                </label>
+                <div class="actions" style="align-self: end;">
+                  <button type="button" class="primary" id="save-position">Save position</button>
+                  <button type="button" class="secondary" id="cancel-position">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="primary">Run compliance review</button>
+              <div id="loading-state" class="loading-bar" style="display: none;"></div>
+              <div id="form-feedback" class="muted"></div>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h2>2) Results & guidance</h2>
+          <p class="muted">We’ll summarize breaches, highlight warnings, and surface soft-rule coaching.</p>
+
+          <div class="row" style="align-items: center;">
+            <div id="status-pill" class="status-badge status-compliant" style="display: none;">Status</div>
+            <div id="rules-source" class="pill" style="display: none;"></div>
+          </div>
+
+          <div style="margin-top: 16px;" class="grid">
+            <div class="panel" style="background: rgba(255, 255, 255, 0.02);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h3 style="margin: 0;">Hard breaches</h3>
+                  <p class="muted" style="margin: 2px 0 0;">Critical blocks you must fix.</p>
+                </div>
+                <span class="tag danger" id="hard-count">0</span>
+              </div>
+              <div id="hard-list" class="grid" style="margin-top: 10px;"></div>
+              <div id="hard-empty" class="empty-state">No hard breaches detected. 🔒</div>
+            </div>
+
+            <div class="panel" style="background: rgba(255, 255, 255, 0.02);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h3 style="margin: 0;">Warnings</h3>
+                  <p class="muted" style="margin: 2px 0 0;">Trending risky — adjust before you breach.</p>
+                </div>
+                <span class="tag warn" id="warn-count">0</span>
+              </div>
+              <div id="warn-list" class="grid" style="margin-top: 10px;"></div>
+              <div id="warn-empty" class="empty-state">No warnings — keep the discipline. ✨</div>
+            </div>
+          </div>
+
+          <div class="panel" style="background: rgba(255, 255, 255, 0.02); margin-top: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+              <div>
+                <h3 style="margin: 0;">Soft-rule insights</h3>
+                <p class="muted" style="margin: 2px 0 0;">Playbook tips pulled from the rule database.</p>
+              </div>
+              <span class="pill-accent" id="soft-count">0 insights</span>
+            </div>
+            <div id="soft-list" class="insight-grid" style="margin-top: 10px;"></div>
+            <div id="soft-empty" class="empty-state">Soft guidance appears here when available.</div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const positions = [];
+      const positionForm = document.getElementById("position-form");
+      const positionsBody = document.getElementById("positions-body");
+      const positionsTable = document.getElementById("positions-table");
+      const positionsEmpty = document.getElementById("positions-empty");
+      const addPositionBtn = document.getElementById("add-position");
+      const savePositionBtn = document.getElementById("save-position");
+      const cancelPositionBtn = document.getElementById("cancel-position");
+
+      const statusPill = document.getElementById("status-pill");
+      const rulesSource = document.getElementById("rules-source");
+      const hardList = document.getElementById("hard-list");
+      const hardEmpty = document.getElementById("hard-empty");
+      const warnList = document.getElementById("warn-list");
+      const warnEmpty = document.getElementById("warn-empty");
+      const softList = document.getElementById("soft-list");
+      const softEmpty = document.getElementById("soft-empty");
+      const hardCount = document.getElementById("hard-count");
+      const warnCount = document.getElementById("warn-count");
+      const softCount = document.getElementById("soft-count");
+      const formFeedback = document.getElementById("form-feedback");
+      const loadingState = document.getElementById("loading-state");
+
+      const defaults = {
+        firm: "FundedNext",
+        program_id: "stellar_1step",
+        account_id: "demo-001",
+        balance: 100000,
+        equity: 98500,
+        starting_balance: 100000,
+        day_start_balance: 100000,
+        day_start_equity: 100000,
+        margin_used: 5000,
+        margin_available: 15000,
+        total_profit_loss: -500,
+      };
+
+      function applyDefaults() {
+        Object.entries(defaults).forEach(([key, value]) => {
+          const el = document.getElementById(key);
+          if (el) el.value = value;
+        });
+      }
+
+      function togglePositionForm(show) {
+        positionForm.style.display = show ? "grid" : "none";
+      }
+
+      function renderPositions() {
+        positionsBody.innerHTML = "";
+        if (positions.length === 0) {
+          positionsEmpty.style.display = "block";
+          positionsTable.style.display = "none";
+          return;
+        }
+        positionsEmpty.style.display = "none";
+        positionsTable.style.display = "table";
+        positions.forEach((pos, idx) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${pos.symbol}</td>
+            <td style="text-transform: capitalize;">${pos.side}</td>
+            <td>${pos.volume}</td>
+            <td>${pos.entry_price}</td>
+            <td>${pos.current_price}</td>
+            <td>${pos.profit_loss}</td>
+            <td><button type="button" class="secondary" data-idx="${idx}">Remove</button></td>
+          `;
+          tr.querySelector("button").addEventListener("click", (e) => {
+            const index = Number(e.currentTarget.dataset.idx);
+            positions.splice(index, 1);
+            renderPositions();
+          });
+          positionsBody.appendChild(tr);
+        });
+      }
+
+      addPositionBtn.addEventListener("click", () => {
+        togglePositionForm(true);
+      });
+
+      cancelPositionBtn.addEventListener("click", () => {
+        togglePositionForm(false);
+      });
+
+      savePositionBtn.addEventListener("click", () => {
+        const symbol = document.getElementById("pos-symbol").value.trim();
+        if (!symbol) {
+          alert("Please add a symbol.");
+          return;
+        }
+        positions.push({
+          position_id: `${symbol}-${Date.now()}`,
+          symbol,
+          side: document.getElementById("pos-side").value,
+          volume: parseFloat(document.getElementById("pos-volume").value || "0"),
+          entry_price: parseFloat(document.getElementById("pos-entry").value || "0"),
+          current_price: parseFloat(document.getElementById("pos-current").value || "0"),
+          profit_loss: parseFloat(document.getElementById("pos-pl").value || "0"),
+        });
+        document.getElementById("pos-symbol").value = "";
+        document.getElementById("pos-volume").value = "1";
+        document.getElementById("pos-entry").value = "0";
+        document.getElementById("pos-current").value = "0";
+        document.getElementById("pos-pl").value = "0";
+        togglePositionForm(false);
+        renderPositions();
+      });
+
+      function renderBreaches(list, container, emptyState) {
+        container.innerHTML = "";
+        if (list.length === 0) {
+          emptyState.style.display = "block";
+          return;
+        }
+        emptyState.style.display = "none";
+        list.forEach((breach) => {
+          const div = document.createElement("div");
+          div.className = "breach-chip";
+          div.innerHTML = `
+            <strong>${breach.code}</strong> — ${breach.message}<br />
+            <small>${breach.value !== null && breach.value !== undefined ? `Value: ${breach.value}` : ""}
+            ${breach.threshold !== null && breach.threshold !== undefined ? ` • Limit: ${breach.threshold}` : ""}</small>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      function renderSoftRules(list) {
+        softList.innerHTML = "";
+        if (!list || list.length === 0) {
+          softEmpty.style.display = "block";
+          return;
+        }
+        softEmpty.style.display = "none";
+        list.forEach((insight) => {
+          const card = document.createElement("div");
+          card.className = "insight";
+          card.innerHTML = `
+            <div class="pill-accent" style="margin-bottom: 8px;">${insight.rule_type || "Soft rule"}</div>
+            <div>${insight.description || "No description"}</div>
+            <p class="muted-inline" style="margin: 8px 0 0;">${insight.conditions || ""}</p>
+            <div class="muted-inline" style="margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap;">
+              ${insight.challenge_type ? `<span class="pill" style="padding: 6px 8px;">${insight.challenge_type}</span>` : ""}
+              ${insight.severity ? `<span class="pill" style="padding: 6px 8px;">${insight.severity}</span>` : ""}
+              ${insight.extraction_method ? `<span class="pill" style="padding: 6px 8px;">${insight.extraction_method}</span>` : ""}
+            </div>
+          `;
+          softList.appendChild(card);
+        });
+      }
+
+      function setStatus(status, source) {
+        statusPill.style.display = "inline-flex";
+        statusPill.textContent = status.replace("_", " ");
+        statusPill.className = `status-badge status-${status}`;
+        if (source) {
+          rulesSource.style.display = "inline-flex";
+          rulesSource.textContent = `Rule source: ${source}`;
+        }
+      }
+
+      function setCounts(hard, warn, soft) {
+        hardCount.textContent = hard;
+        warnCount.textContent = warn;
+        softCount.textContent = `${soft} insights`;
+      }
+
+      function parseBool(value) {
+        return String(value).toLowerCase() === "true";
+      }
+
+      document.getElementById("review-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        formFeedback.textContent = "";
+        loadingState.style.display = "block";
+
+        const payload = {
+          firm: document.getElementById("firm").value.trim(),
+          program_id: document.getElementById("program_id").value.trim() || null,
+          account_id: document.getElementById("account_id").value.trim() || null,
+          include_soft_rules: parseBool(document.getElementById("include_soft_rules").value),
+          account: {
+            balance: parseFloat(document.getElementById("balance").value),
+            equity: parseFloat(document.getElementById("equity").value),
+            starting_balance: document.getElementById("starting_balance").value ? parseFloat(document.getElementById("starting_balance").value) : null,
+            day_start_balance: document.getElementById("day_start_balance").value ? parseFloat(document.getElementById("day_start_balance").value) : null,
+            day_start_equity: document.getElementById("day_start_equity").value ? parseFloat(document.getElementById("day_start_equity").value) : null,
+            margin_used: parseFloat(document.getElementById("margin_used").value || "0"),
+            margin_available: parseFloat(document.getElementById("margin_available").value || "0"),
+            total_profit_loss: parseFloat(document.getElementById("total_profit_loss").value || "0"),
+            positions: positions,
+          },
+        };
+
+        try {
+          const res = await fetch("/compliance/review", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.detail || "Unable to run compliance review");
+          }
+
+          const data = await res.json();
+          setStatus(data.status, data.rules_source);
+          renderBreaches(data.hard_breaches || [], hardList, hardEmpty);
+          renderBreaches(data.warnings || [], warnList, warnEmpty);
+          renderSoftRules(data.soft_rule_insights || []);
+          setCounts(data.hard_breaches?.length || 0, data.warnings?.length || 0, data.soft_rule_insights?.length || 0);
+          formFeedback.textContent = "Review updated with the latest Guardian rules.";
+        } catch (err) {
+          formFeedback.textContent = err.message || "Unexpected error";
+        } finally {
+          loadingState.style.display = "none";
+        }
+      });
+
+      applyDefaults();
+      renderPositions();
+      togglePositionForm(false);
+    </script>
+  </body>
+</html>
