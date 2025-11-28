@@ -14,6 +14,7 @@ import logging
 import time
 from src.mt5_client import MT5Client
 from src.models import AccountSnapshot
+from src.ollama_rule_scanner import OllamaRuleScanner
 
 
 # Configure logging
@@ -620,6 +621,91 @@ async def get_server_time(session: Dict = Depends(get_current_session)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching server time: {str(e)}"
+        )
+
+
+# ==================== Rule Violation Scanner ====================
+
+@app.post("/scan", tags=["Analysis"])
+async def scan_account(
+    firm_name: Optional[str] = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request = None
+):
+    """
+    Scan account for rule violations using Ollama LLM
+    
+    Analyzes current account state against propfirm rules database.
+    Uses local Ollama instance with fallback to rule-based analysis.
+    
+    Args:
+        firm_name: Optional propfirm name (e.g., "FTMO", "5ers")
+        
+    Returns:
+        Comprehensive violation report with severity levels
+    """
+    request_id = request.state.request_id if request else "unknown"
+    logger.info(f"Scan request for firm: {firm_name or 'all'}")
+    
+    # Validate session
+    token = credentials.credentials
+    session = active_sessions.get(token)
+    if not session:
+        logger.warning(f"Scan attempted with invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session token"
+        )
+    
+    # Get account data
+    client: MT5Client = session['client']
+    try:
+        account_info = client.get_account_info()
+        positions = client.get_positions()
+        
+        # Format account data for scanner
+        account_data = {
+            'balance': account_info['balance'],
+            'equity': account_info['equity'],
+            'profit': account_info['profit'],
+            'margin': account_info['margin'],
+            'margin_free': account_info['margin_free'],
+            'margin_level': account_info['margin_level'],
+            'positions': [
+                {
+                    'symbol': p['symbol'],
+                    'type': p['type'],
+                    'volume': p['volume'],
+                    'price_open': p['price_open'],
+                    'price_current': p['price_current'],
+                    'sl': p['sl'],
+                    'tp': p['tp'],
+                    'profit': p['profit']
+                }
+                for p in positions
+            ]
+        }
+        
+        # Initialize scanner (uses your local Ollama)
+        scanner = OllamaRuleScanner(
+            ollama_url="http://localhost:11434",
+            model="qwen2.5-coder:14b",
+            db_path="propfirm_scraper.db"
+        )
+        
+        # Scan for violations
+        logger.info(f"Starting Ollama scan for account {account_info['login']}")
+        report = scanner.scan_account(account_data, firm_name)
+        logger.info(f"Scan complete: {report['violation_count']['critical']} critical, "
+                   f"{report['violation_count']['high']} high violations")
+        
+        return report
+        
+    except Exception as e:
+        logger.error(f"Scan failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to scan account: {str(e)}"
         )
 
 

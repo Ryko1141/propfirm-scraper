@@ -60,18 +60,33 @@ class OllamaRuleScanner:
             if system_prompt:
                 payload["system"] = system_prompt
             
+            print(f"   Sending request to Ollama (model: {self.model})...")
+            
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json=payload,
-                timeout=60
+                timeout=120  # Increased timeout for larger models
             )
             response.raise_for_status()
             
             result = response.json()
-            return result.get("response", "")
+            llm_response = result.get("response", "")
             
+            print(f"   Received response ({len(llm_response)} chars)")
+            
+            if not llm_response:
+                print("   ⚠️  Warning: Empty response from Ollama")
+            
+            return llm_response
+            
+        except requests.exceptions.Timeout:
+            print(f"   ❌ Ollama request timed out after 120 seconds")
+            return ""
+        except requests.exceptions.RequestException as e:
+            print(f"   ❌ Ollama API error: {e}")
+            return ""
         except Exception as e:
-            print(f"❌ Ollama API error: {e}")
+            print(f"   ❌ Unexpected error: {e}")
             return ""
     
     def _get_firm_rules_from_db(self, firm_name: Optional[str] = None) -> List[Dict]:
@@ -151,6 +166,81 @@ class OllamaRuleScanner:
         except Exception as e:
             print(f"❌ Database error: {e}")
             return []
+    
+    def _fallback_rule_analysis(self, account_data: Dict, db_rules: List[Dict]) -> List[RuleViolation]:
+        """
+        Fallback rule-based analysis when LLM fails
+        Simple threshold checking without AI interpretation
+        """
+        violations = []
+        balance = account_data.get('balance', 0)
+        equity = account_data.get('equity', 0)
+        profit = account_data.get('profit', 0)
+        positions = account_data.get('positions', [])
+        
+        # Check daily drawdown
+        daily_loss_pct = abs(profit / balance * 100) if balance > 0 else 0
+        
+        for rule in db_rules:
+            rule_type = rule.get('rule_type', '').lower()
+            value_str = rule.get('value', '')
+            
+            # Daily loss rule
+            if 'daily' in rule_type and 'loss' in rule_type:
+                try:
+                    threshold = float(value_str.rstrip('%'))
+                    if daily_loss_pct >= threshold * 0.8:  # 80% threshold
+                        severity = "CRITICAL" if daily_loss_pct >= threshold else "HIGH"
+                        violations.append(RuleViolation(
+                            severity=severity,
+                            rule_type=rule.get('rule_category', 'hard_rule'),
+                            category='daily_drawdown',
+                            description=f"Daily loss at {daily_loss_pct:.2f}%, approaching {threshold}% limit",
+                            current_value=daily_loss_pct,
+                            threshold_value=threshold,
+                            firm_name=rule.get('firm_name'),
+                            recommendation="Close losing positions or reduce exposure",
+                            timestamp=datetime.now().isoformat()
+                        ))
+                except (ValueError, AttributeError):
+                    pass
+            
+            # Stop loss rule
+            if 'stop' in rule_type and 'loss' in rule_type:
+                positions_without_sl = [p for p in positions if p.get('sl', 0) == 0]
+                if positions_without_sl:
+                    violations.append(RuleViolation(
+                        severity="MEDIUM",
+                        rule_type='soft_rule',
+                        category='stop_loss',
+                        description=f"{len(positions_without_sl)} position(s) missing stop loss",
+                        current_value=len(positions_without_sl),
+                        threshold_value=0,
+                        firm_name=rule.get('firm_name'),
+                        recommendation="Add stop loss orders to all positions",
+                        timestamp=datetime.now().isoformat()
+                    ))
+            
+            # Position count rule
+            if 'position' in rule_type and 'max' in rule_type:
+                try:
+                    max_positions = int(value_str.split()[0])
+                    if len(positions) > max_positions:
+                        violations.append(RuleViolation(
+                            severity="MEDIUM",
+                            rule_type='soft_rule',
+                            category='position_count',
+                            description=f"Too many positions: {len(positions)} > {max_positions}",
+                            current_value=len(positions),
+                            threshold_value=max_positions,
+                            firm_name=rule.get('firm_name'),
+                            recommendation="Reduce number of open positions",
+                            timestamp=datetime.now().isoformat()
+                        ))
+                except (ValueError, AttributeError, IndexError):
+                    pass
+        
+        return violations
     
     def scan_account(self, account_data: Dict, firm_name: Optional[str] = None) -> Dict:
         """
@@ -270,33 +360,47 @@ and soft rules (warnings, best practices). Provide detailed analysis in JSON for
         violations = []
         summary = "Analysis complete"
         
-        try:
-            # Try to extract JSON from response
-            json_start = llm_response.find('{')
-            json_end = llm_response.rfind('}') + 1
-            
-            if json_start != -1 and json_end > json_start:
-                json_str = llm_response[json_start:json_end]
-                analysis = json.loads(json_str)
+        if not llm_response or llm_response.strip() == "":
+            # Empty response from LLM
+            summary = "LLM returned empty response. Performing rule-based analysis..."
+            violations = self._fallback_rule_analysis(account_data, db_rules)
+        else:
+            try:
+                # Try to extract JSON from response
+                json_start = llm_response.find('{')
+                json_end = llm_response.rfind('}') + 1
                 
-                for v in analysis.get('violations', []):
-                    violations.append(RuleViolation(
-                        severity=v.get('severity', 'MEDIUM'),
-                        rule_type=v.get('rule_type', 'unknown'),
-                        category=v.get('category', 'general'),
-                        description=v.get('description', ''),
-                        current_value=v.get('current_value'),
-                        threshold_value=v.get('threshold_value'),
-                        firm_name=firm_name,
-                        recommendation=v.get('recommendation', ''),
-                        timestamp=datetime.now().isoformat()
-                    ))
-                
-                summary = analysis.get('summary', 'Analysis complete')
-        except json.JSONDecodeError:
-            # Fallback: parse text response
-            print("⚠️  Could not parse JSON, using text analysis")
-            summary = llm_response[:500]
+                if json_start != -1 and json_end > json_start:
+                    json_str = llm_response[json_start:json_end]
+                    analysis = json.loads(json_str)
+                    
+                    for v in analysis.get('violations', []):
+                        violations.append(RuleViolation(
+                            severity=v.get('severity', 'MEDIUM'),
+                            rule_type=v.get('rule_type', 'unknown'),
+                            category=v.get('category', 'general'),
+                            description=v.get('description', ''),
+                            current_value=v.get('current_value'),
+                            threshold_value=v.get('threshold_value'),
+                            firm_name=firm_name,
+                            recommendation=v.get('recommendation', ''),
+                            timestamp=datetime.now().isoformat()
+                        ))
+                    
+                    summary = analysis.get('summary', 'Analysis complete')
+                else:
+                    print("⚠️  No JSON found in response, using fallback analysis")
+                    summary = "JSON parsing failed. Using rule-based analysis..."
+                    violations = self._fallback_rule_analysis(account_data, db_rules)
+                    
+            except json.JSONDecodeError as e:
+                print(f"⚠️  JSON decode error: {e}, using fallback analysis")
+                summary = f"JSON parsing failed: {str(e)}. Using rule-based analysis..."
+                violations = self._fallback_rule_analysis(account_data, db_rules)
+            except Exception as e:
+                print(f"⚠️  Unexpected error: {e}, using fallback analysis")
+                summary = f"Unexpected error: {str(e)}. Using rule-based analysis..."
+                violations = self._fallback_rule_analysis(account_data, db_rules)
         
         # Generate report
         report = {
