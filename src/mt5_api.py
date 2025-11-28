@@ -72,15 +72,20 @@ class AccountInfoResponse(BaseModel):
 class PositionResponse(BaseModel):
     """Response model for a position"""
     ticket: int
-    symbol: str
-    volume: float
+    time: int
     type: int
+    magic: int
+    identifier: int
+    reason: int
+    volume: float
     price_open: float
     price_current: float
-    profit: float
     sl: float
     tp: float
-    time: int
+    profit: float
+    swap: float
+    symbol: str
+    comment: str
 
 
 class ErrorResponse(BaseModel):

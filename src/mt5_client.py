@@ -222,7 +222,6 @@ class MT5Client:
                 "tp": pos.tp,
                 "profit": pos.profit,
                 "swap": pos.swap,
-                "commission": pos.commission,
                 "symbol": pos.symbol,
                 "comment": pos.comment
             })
