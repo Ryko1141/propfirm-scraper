@@ -210,7 +210,44 @@ client.logout()
 
 📖 **Full API Documentation:** See `docs/api/MT5_REST_API.md` and `docs/api/MT5_API_QUICKSTART.md`
 
-### 5. Scrape and Extract Rules
+### 5. Launch the Compliance Review API
+
+Use Guardian's rule engine as a backend service to accept user-provided account data, review live prop compliance, and surface soft-rule insights from the rules database.
+
+```bash
+# Start the Compliance API (port 8010 by default)
+python -m src.compliance_api
+
+# Or with auto-reload during development
+uvicorn src.compliance_api:app --host 0.0.0.0 --port 8010 --reload
+```
+
+Example compliance review request:
+
+```bash
+curl -X POST "http://localhost:8010/compliance/review" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "firm": "FundedNext",
+        "program_id": "stellar_1step",
+        "account_id": "demo-001",
+        "account": {
+          "balance": 100000,
+          "equity": 98500,
+          "starting_balance": 100000,
+          "day_start_balance": 100000,
+          "day_start_equity": 100000,
+          "margin_used": 5000,
+          "margin_available": 15000,
+          "positions": []
+        },
+        "include_soft_rules": true
+      }'
+```
+
+The response summarizes hard breaches, warnings, and soft-rule guidance pulled from the latest database contents.
+
+### 6. Scrape and Extract Rules
 
 ```bash
 # Scrape a prop firm help center
