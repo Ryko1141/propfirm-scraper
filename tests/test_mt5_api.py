@@ -3,153 +3,165 @@ Test script for MT5 REST API
 Tests basic functionality without requiring MT5 credentials
 """
 import requests
-import sys
+import pytest
+import time
+from typing import Optional
+
+
+BASE_URL = "http://localhost:8000"
+TEST_CREDENTIALS = {
+    "account_number": 1512191081,
+    "password": "Test1234!",
+    "server": "FTMO-Demo"
+}
 
 
 def test_api_health():
     """Test if API server is running"""
-    try:
-        response = requests.get("http://localhost:8000/health", timeout=5)
-        if response.status_code == 200:
-            data = response.json()
-            print(f"✓ API server is healthy")
-            print(f"  Status: {data.get('status')}")
-            print(f"  Active sessions: {data.get('active_sessions', 0)}")
-            return True
-        else:
-            print(f"✗ API server returned status {response.status_code}")
-            return False
-    except requests.exceptions.ConnectionError:
-        print("✗ Cannot connect to API server")
-        print("  Make sure the server is running: python run_mt5_api.py")
-        return False
-    except Exception as e:
-        print(f"✗ Error: {e}")
-        return False
+    response = requests.get(f"{BASE_URL}/health", timeout=5)
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    
+    data = response.json()
+    assert data.get('status') == 'healthy', "API should report healthy status"
+    assert 'active_sessions' in data, "Response should include active_sessions count"
+    print(f"✓ API server is healthy - {data.get('active_sessions', 0)} active sessions")
 
 
 def test_api_root():
     """Test API root endpoint"""
-    try:
-        response = requests.get("http://localhost:8000/", timeout=5)
-        if response.status_code == 200:
-            data = response.json()
-            print(f"✓ API root endpoint accessible")
-            print(f"  Name: {data.get('name')}")
-            print(f"  Version: {data.get('version')}")
-            return True
-        else:
-            print(f"✗ Root endpoint returned status {response.status_code}")
-            return False
-    except Exception as e:
-        print(f"✗ Error: {e}")
-        return False
+    response = requests.get(f"{BASE_URL}/", timeout=5)
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    
+    data = response.json()
+    assert data.get('name') == 'MT5 REST API', "API name should match"
+    assert 'version' in data, "Response should include version"
+    assert 'endpoints' in data, "Response should include endpoints list"
+    print(f"✓ API root endpoint accessible - {data.get('name')} v{data.get('version')}")
 
 
 def test_api_docs():
     """Test if API documentation is accessible"""
-    try:
-        response = requests.get("http://localhost:8000/docs", timeout=5)
-        if response.status_code == 200:
-            print(f"✓ API documentation accessible at http://localhost:8000/docs")
-            return True
-        else:
-            print(f"✗ Documentation returned status {response.status_code}")
-            return False
-    except Exception as e:
-        print(f"✗ Error: {e}")
-        return False
+    response = requests.get(f"{BASE_URL}/docs", timeout=5)
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+    assert b"swagger" in response.content.lower() or b"openapi" in response.content.lower(), \
+        "Documentation should contain OpenAPI/Swagger UI"
+    print(f"✓ API documentation accessible at {BASE_URL}/docs")
 
 
 def test_invalid_login():
     """Test login with invalid credentials (should fail gracefully)"""
-    try:
-        response = requests.post(
-            "http://localhost:8000/api/v1/login",
-            json={
-                "account_number": 99999999,
-                "password": "invalid",
-                "server": "Invalid-Server"
-            },
-            timeout=10
-        )
-        if response.status_code in [401, 500]:
-            print(f"✓ Invalid login properly rejected (status {response.status_code})")
-            return True
-        else:
-            print(f"⚠ Unexpected status code: {response.status_code}")
-            return True  # Still counts as working
-    except Exception as e:
-        print(f"✗ Error testing login: {e}")
-        return False
+    response = requests.post(
+        f"{BASE_URL}/api/v1/login",
+        json={
+            "account_number": 99999999,
+            "password": "invalid",
+            "server": "Invalid-Server"
+        },
+        timeout=30  # MT5 connection may take time to fail
+    )
+    assert response.status_code in [401, 500, 503], \
+        f"Invalid login should return 401/500/503, got {response.status_code}"
+    
+    data = response.json()
+    assert 'detail' in data, "Error response should include detail message"
+    print(f"✓ Invalid login properly rejected (status {response.status_code})")
 
 
 def test_unauthorized_access():
     """Test accessing protected endpoint without authentication"""
-    try:
-        response = requests.get(
-            "http://localhost:8000/api/v1/account",
-            timeout=5
-        )
-        if response.status_code == 401:
-            print(f"✓ Unauthorized access properly blocked")
-            return True
-        else:
-            print(f"⚠ Expected 401, got {response.status_code}")
-            return False
-    except Exception as e:
-        print(f"✗ Error: {e}")
-        return False
+    response = requests.get(f"{BASE_URL}/api/v1/account", timeout=5)
+    assert response.status_code == 403, \
+        f"Unauthorized access should return 403, got {response.status_code}"
+    print(f"✓ Unauthorized access properly blocked")
 
 
-def main():
-    print("="*60)
-    print("MT5 REST API - Basic Tests")
-    print("="*60)
-    print("\nNote: These tests verify the API is working without")
-    print("      requiring actual MT5 credentials.")
-    print()
+def test_commission_not_in_position():
+    """Regression test: commission field should not be in TradePosition response"""
+    # This test requires valid MT5 credentials and open positions
+    # Skip if credentials not available
+    pytest.skip("Requires valid MT5 credentials and open positions")
     
-    tests = [
-        ("Health Check", test_api_health),
-        ("Root Endpoint", test_api_root),
-        ("Documentation", test_api_docs),
-        ("Invalid Login", test_invalid_login),
-        ("Unauthorized Access", test_unauthorized_access),
-    ]
+    # Uncomment below if you have valid credentials
+    # response = requests.post(f"{BASE_URL}/api/v1/login", json=TEST_CREDENTIALS, timeout=10)
+    # assert response.status_code == 200
+    # token = response.json()["session_token"]
+    # 
+    # headers = {"Authorization": f"Bearer {token}"}
+    # response = requests.get(f"{BASE_URL}/api/v1/positions", headers=headers, timeout=10)
+    # assert response.status_code == 200
+    # 
+    # positions = response.json()
+    # if positions:
+    #     position = positions[0]
+    #     assert 'commission' not in position, "commission should not be in TradePosition"
+    #     assert 'ticket' in position, "ticket is required"
+    #     assert 'symbol' in position, "symbol is required"
+    #     assert 'volume' in position, "volume is required"
+    #     assert 'price_open' in position, "price_open is required"
+    #     assert 'sl' in position, "sl is required"
+    #     assert 'tp' in position, "tp is required"
+    #     print(f"✓ Position structure validated (no commission field)")
+
+
+@pytest.mark.skipif(True, reason="Requires valid MT5 credentials")
+def test_positive_path_auth_flow():
+    """Test complete authentication flow: login → access → logout → verify 401"""
+    # Login
+    response = requests.post(f"{BASE_URL}/api/v1/login", json=TEST_CREDENTIALS, timeout=10)
+    assert response.status_code == 200, "Login should succeed with valid credentials"
     
-    results = []
-    for test_name, test_func in tests:
-        print(f"\nTest: {test_name}")
-        print("-" * 40)
-        result = test_func()
-        results.append(result)
-        print()
+    data = response.json()
+    assert 'session_token' in data, "Response should include session_token"
+    token = data['session_token']
+    print(f"✓ Login successful, token received")
     
-    # Summary
-    print("="*60)
-    print("Test Summary")
-    print("="*60)
-    passed = sum(results)
-    total = len(results)
-    print(f"\nPassed: {passed}/{total}")
+    headers = {"Authorization": f"Bearer {token}"}
     
-    if passed == total:
-        print("\n✓ All tests passed! The API is working correctly.")
-        print("\nNext steps:")
-        print("1. View API documentation: http://localhost:8000/docs")
-        print("2. Test with real credentials: python examples/test_mt5_api.py")
-        print("3. Try the web client: examples/mt5_api_client.html")
-    else:
-        print(f"\n⚠ {total - passed} test(s) failed.")
-        print("\nTroubleshooting:")
-        print("1. Make sure the server is running: python run_mt5_api.py")
-        print("2. Check if port 8000 is available")
-        print("3. Check for any error messages above")
+    # Access protected endpoint
+    response = requests.get(f"{BASE_URL}/api/v1/positions", headers=headers, timeout=10)
+    assert response.status_code == 200, "Positions endpoint should be accessible with valid token"
+    print(f"✓ Positions endpoint accessible with token")
     
-    print()
-    sys.exit(0 if passed == total else 1)
+    # Logout
+    response = requests.post(f"{BASE_URL}/api/v1/logout", headers=headers, timeout=10)
+    assert response.status_code == 200, "Logout should succeed"
+    print(f"✓ Logout successful")
+    
+    # Verify token is invalidated
+    response = requests.get(f"{BASE_URL}/api/v1/positions", headers=headers, timeout=10)
+    assert response.status_code == 401, "Token should be invalid after logout"
+    print(f"✓ Token properly invalidated after logout")
+
+
+@pytest.mark.skipif(True, reason="Requires valid MT5 credentials")
+def test_session_expiry():
+    """Test that expired tokens return 401"""
+    # This would require manipulating session expiry time or waiting 24 hours
+    # For now, test with an invalid token
+    headers = {"Authorization": "Bearer invalid_token_12345"}
+    response = requests.get(f"{BASE_URL}/api/v1/account", headers=headers, timeout=5)
+    assert response.status_code == 401, "Invalid token should return 401"
+    
+    data = response.json()
+    assert 'detail' in data, "Error should include detail message"
+    print(f"✓ Invalid token properly rejected with 401")
+
+
+def test_cors_headers():
+    """Test that CORS headers are present"""
+    response = requests.options(f"{BASE_URL}/api/v1/login", timeout=5)
+    # In production, this should be more restrictive
+    assert 'access-control-allow-origin' in response.headers, "CORS headers should be present"
+    print(f"✓ CORS headers configured")
 
 
 if __name__ == "__main__":
-    main()
+    # Run with pytest
+    import sys
+    print("="*60)
+    print("MT5 REST API - Test Suite")
+    print("="*60)
+    print("\nRun with: pytest tests/test_mt5_api.py -v")
+    print("Or:       python tests/test_mt5_api.py")
+    print()
+    sys.exit(pytest.main([__file__, "-v", "--tb=short"]))

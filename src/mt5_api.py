@@ -1,7 +1,7 @@
 """
 MT5 REST API - Allows clients to connect to MT5 with their credentials
 """
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -9,9 +9,19 @@ from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import secrets
 import hashlib
+import uuid
+import logging
+import time
 from src.mt5_client import MT5Client
 from src.models import AccountSnapshot
 
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] %(message)s'
+)
+logger = logging.getLogger("mt5_api")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -28,6 +38,35 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Request ID middleware for tracing
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    """Add unique request ID for tracing"""
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    
+    # Add to logging context
+    old_factory = logging.getLogRecordFactory()
+    def record_factory(*args, **kwargs):
+        record = old_factory(*args, **kwargs)
+        record.request_id = request_id
+        return record
+    logging.setLogRecordFactory(record_factory)
+    
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Process-Time"] = str(process_time)
+    
+    logger.info(f"{request.method} {request.url.path} - {response.status_code} - {process_time:.3f}s")
+    
+    # Restore old factory
+    logging.setLogRecordFactory(old_factory)
+    
+    return response
 
 # Security
 security = HTTPBearer()
@@ -181,8 +220,18 @@ async def root():
     }
 
 
+@app.get("/healthz")
+async def healthz():
+    """Health check endpoint (does not touch MT5)"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "uptime": "operational"
+    }
+
+
 @app.post("/api/v1/login", response_model=MT5LoginResponse, responses={401: {"model": ErrorResponse}})
-async def login(request: MT5LoginRequest):
+async def login(request: Request, login_data: MT5LoginRequest):
     """
     Authenticate with MT5 and create a session
     
@@ -194,42 +243,53 @@ async def login(request: MT5LoginRequest):
     
     Returns a session token for subsequent authenticated requests.
     """
+    request_id = getattr(request.state, 'request_id', 'unknown')
+    logger.info(f"Login attempt for account {login_data.account_number} on {login_data.server}")
+    
     try:
         # Create MT5 client
         client = MT5Client(
-            account_number=request.account_number,
-            password=request.password,
-            server=request.server,
-            path=request.path
+            account_number=login_data.account_number,
+            password=login_data.password,
+            server=login_data.server,
+            path=login_data.path
         )
         
-        # Attempt connection
+        # Attempt connection with timeout
         if not client.connect():
+            logger.warning(f"Failed to connect account {login_data.account_number}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Failed to connect to MT5. Check credentials and server."
+                detail="Failed to connect to MT5. Check credentials and server.",
+                headers={"X-Request-ID": request_id}
             )
         
         # Create session
         token = create_session(
-            request.account_number,
-            request.password,
-            request.server,
-            request.path,
+            login_data.account_number,
+            login_data.password,
+            login_data.server,
+            login_data.path,
             client
         )
         
+        logger.info(f"Login successful for account {login_data.account_number}")
+        
         return MT5LoginResponse(
             session_token=token,
-            account_number=request.account_number,
-            server=request.server,
+            account_number=login_data.account_number,
+            server=login_data.server,
             expires_in=86400  # 24 hours
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Login error for account {login_data.account_number}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Login failed: {str(e)}"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"MT5 service temporarily unavailable: {str(e)}",
+            headers={"X-Request-ID": request_id}
         )
 
 
