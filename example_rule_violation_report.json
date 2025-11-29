@@ -1,0 +1,24 @@
+{
+  "scan_timestamp": "2025-11-28T04:51:35.178862",
+  "firm_name": "FTMO",
+  "model_used": "qwen2.5-coder:14b",
+  "account_summary": {
+    "balance": 100000.0,
+    "equity": 95500.0,
+    "profit": -4500.0,
+    "open_positions": 2
+  },
+  "rules_checked": 0,
+  "documents_analyzed": 0,
+  "violations": [],
+  "violation_count": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "hard_rules_violated": 0,
+  "soft_rules_violated": 0,
+  "summary": "Analysis complete",
+  "llm_raw_response": ""
+}

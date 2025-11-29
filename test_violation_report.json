@@ -1,0 +1,47 @@
+{
+  "scan_timestamp": "2025-11-28T05:09:26.807218",
+  "firm_name": "FTMO",
+  "model_used": "qwen2.5-coder:14b",
+  "account_summary": {
+    "balance": 100000.0,
+    "equity": 95800.0,
+    "profit": -4200.0,
+    "open_positions": 3
+  },
+  "rules_checked": 7,
+  "documents_analyzed": 2,
+  "violations": [
+    {
+      "severity": "MEDIUM",
+      "rule_type": "soft_rule",
+      "category": "stop_loss",
+      "description": "1 position(s) missing stop loss",
+      "current_value": 1,
+      "threshold_value": 0,
+      "firm_name": "FTMO",
+      "recommendation": "Add stop loss orders to all positions",
+      "timestamp": "2025-11-28T05:09:26.807218"
+    },
+    {
+      "severity": "HIGH",
+      "rule_type": "hard_rule",
+      "category": "daily_drawdown",
+      "description": "Daily loss at 4.20%, approaching 5.0% limit",
+      "current_value": 4.2,
+      "threshold_value": 5.0,
+      "firm_name": "FTMO",
+      "recommendation": "Close losing positions or reduce exposure",
+      "timestamp": "2025-11-28T05:09:26.807218"
+    }
+  ],
+  "violation_count": {
+    "critical": 0,
+    "high": 1,
+    "medium": 1,
+    "low": 0
+  },
+  "hard_rules_violated": 1,
+  "soft_rules_violated": 1,
+  "summary": "LLM returned empty response. Performing rule-based analysis...",
+  "llm_raw_response": ""
+}
